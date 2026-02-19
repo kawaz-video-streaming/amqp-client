@@ -1,0 +1,36 @@
+{
+  "name": "@kawaz/amqp-client",
+  "version": "1.0.0",
+  "description": "AMQP client library for Kawaz services",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "amqp",
+    "rabbitmq",
+    "messaging"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.4",
+    "@types/node": "^20.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.2.2"
+  },
+  "publishConfig": {
+    "registry": "https://your-artifactory-url/artifactory/api/npm/npm"
+  }
+}
