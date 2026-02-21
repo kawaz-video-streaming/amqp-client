@@ -1,52 +1,49 @@
-import amqp, { Channel } from 'amqplib';
+import amqp, { Channel, ChannelModel } from 'amqplib';
 import { AmqpConfig } from './config';
-
-export const createAmqpClient = async (config: AmqpConfig): Promise<AmqpClient> => {
-    const channel = await (await amqp.connect({ username: config.amqpUser, password: config.amqpPassword, hostname: config.amqpConnectionString }))
-        .createChannel();
-    return new AmqpClient(channel);
-}
+import { AmqpConnectionError, AmqpPublisherError, AmqpUninitializedError } from './errors';
+import { isNil, isNotNil } from 'ramda';
+import { Consumer } from './consumer';
 
 export class AmqpClient {
-    constructor(private readonly channel: Channel) {
+    connection: ChannelModel | undefined;
+    channel: Channel | undefined;
+    constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer[]) {
     }
 
-    async publish(exchange: string, routingKey: string, message: object): Promise<void> {
-        const buffer = Buffer.from(JSON.stringify(message));
-        this.channel.publish(exchange, routingKey, buffer);
+    async start(): Promise<void> {
+        try {
+            const connection = await amqp.connect({
+                username: this.config.amqpUser,
+                password: this.config.amqpPassword,
+                hostname: this.config.amqpConnectionString,
+            });
+            this.connection = connection;
+            this.channel = await connection.createChannel().then(async (channel) => {
+                await Promise.all(this.consumers.map((consumer) => consumer.start(channel)));
+                return channel;
+            });
+        } catch (error) {
+            throw new AmqpConnectionError((error as Error).message, { amqpConnectionString: this.config.amqpConnectionString });
+        }
     }
 
-    async consume(
-        queue: string,
-        handler: (message: amqp.Message | null) => Promise<void>,
-    ): Promise<void> {
-        await this.channel.consume(queue, async (message) => {
-            try {
-                await handler(message);
-                if (message) {
-                    this.channel.ack(message);
-                }
-            } catch (error) {
-                if (message) {
-                    this.channel.nack(message, false, true);
-                }
-            }
-        });
-    }
-
-    async assertQueue(queue: string, options?: amqp.Options.AssertQueue): Promise<void> {
-        await this.channel.assertQueue(queue, options);
-    }
-
-    async assertExchange(exchange: string): Promise<void> {
-        await this.channel.assertExchange(exchange, "topic", { durable: true });
-    }
-
-    async bindQueue(queue: string, exchange: string, routingKey: string): Promise<void> {
-        await this.channel.bindQueue(queue, exchange, routingKey);
+    publish<T>(exchange: string, topic: string, message: T): void {
+        if (isNil(this.channel)) {
+            throw new AmqpUninitializedError();
+        }
+        const messageData = Buffer.from(JSON.stringify(message));
+        const isPublished = this.channel.publish(exchange, topic, messageData);
+        if (!isPublished) {
+            throw new AmqpPublisherError({ exchange, topic, message });
+        }
     }
 
     async stop(): Promise<void> {
-        await this.channel.close();
+        if (isNotNil(this.channel)) {
+            await this.channel.close();
+        }
+        if (isNotNil(this.connection)) {
+            await this.connection.close();
+        }
     }
 }

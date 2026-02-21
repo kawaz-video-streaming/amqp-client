@@ -1,8 +1,10 @@
 # @ido_kawaz/amqp-client
 
-TypeScript AMQP client library for interacting with RabbitMQ.
+[![CI](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml)
 
-## Install
+TypeScript Amqp client for RabbitMQ publishers and consumers.
+
+## Installation
 
 ```bash
 npm install @ido_kawaz/amqp-client
@@ -11,28 +13,39 @@ npm install @ido_kawaz/amqp-client
 ## Quick start
 
 ```ts
-import { createAmqpClient } from '@ido_kawaz/amqp-client';
+import { AmqpClient, Consumer, AmqpConfig } from '@ido_kawaz/amqp-client';
+
+const config: AmqpConfig = {
+	amqpConnectionString: 'localhost',
+	amqpUser: 'guest',
+	amqpPassword: 'guest',
+};
 
 async function bootstrap() {
-	const client = await createAmqpClient({
-		amqpConnectionString: 'localhost',
-		amqpUser: 'guest',
-		amqpPassword: 'guest',
-	});
+	const consumer = new Consumer(
+		'orders.queue',
+		'orders.exchange',
+		'orders.created',
+		async (message) => {
+			if (!message) {
+				return;
+			}
 
-	await client.assertExchange('orders.exchange');
-	await client.assertQueue('orders.queue', { durable: true });
-	await client.bindQueue('orders.queue', 'orders.exchange', 'orders.created');
+			const payload = JSON.parse(message.content.toString());
+			console.log('received:', payload);
+		},
+	);
 
-	await client.publish('orders.exchange', 'orders.created', {
+	const client = new AmqpClient(config, [consumer]);
+	await client.start();
+
+	client.publish('orders.exchange', 'orders.created', {
 		orderId: '123',
 		total: 45.5,
 	});
 
-	await client.consume('orders.queue', async (msg) => {
-		if (!msg) return;
-		const payload = JSON.parse(msg.content.toString());
-		console.log('received:', payload);
+	process.on('SIGTERM', async () => {
+		await client.stop();
 	});
 }
 
@@ -41,7 +54,7 @@ bootstrap().catch(console.error);
 
 ## Configuration
 
-`createAmqpClient` accepts:
+`AmqpConfig`
 
 - `amqpConnectionString`: RabbitMQ hostname
 - `amqpUser`: RabbitMQ username
@@ -49,37 +62,48 @@ bootstrap().catch(console.error);
 
 ## API
 
-### `createAmqpClient(config: AmqpConfig): Promise<AmqpClient>`
+### `AmqpClient`
 
-Creates a channel and returns an `AmqpClient` instance.
+- `new AmqpClient(config: AmqpConfig, consumers: Consumer[])`
+- `start(): Promise<void>`
+	- Connects to RabbitMQ and starts all consumer registrations.
+- `publish<T>(exchange: string, topic: string, message: T): void`
+	- JSON serializes payload and publishes it.
+	- Throws `AmqpUninitializedError` if `start()` has not been called.
+	- Throws `AmqpPublisherError` if publish returns false.
+- `stop(): Promise<void>`
+	- Closes channel and connection.
 
-### `AmqpClient` methods
+### `Consumer`
 
-- `publish(exchange, routingKey, message)`
-	- Publishes a JSON-serialized message.
-- `consume(queue, handler)`
-	- Consumes messages from a queue.
-	- Acknowledges (`ack`) on successful handler execution.
-	- Rejects with requeue (`nack(..., true)`) if handler throws.
-- `assertQueue(queue, options?)`
-	- Ensures a queue exists.
-- `assertExchange(exchange)`
-	- Ensures a durable `topic` exchange exists.
-- `bindQueue(queue, exchange, routingKey)`
-	- Binds a queue to an exchange using a routing key.
-- `stop()`
-	- Closes the channel.
+- `new Consumer(queue, exchange, topic, handler)`
+	- Asserts queue and exchange and binds queue to topic.
+	- Calls handler for each message.
+	- `ack`s on success.
+	- `nack`s with requeue logic for `AmqpRetriableError`.
+	- `nack`s without requeue for all other errors.
+
+## Errors
+
+- `AmqpError`
+- `AmqpConnectionError`
+- `AmqpUninitializedError`
+- `AmqpPublisherError`
+- `AmqpConsumerError`
+- `AmqpRetriableError`
+- `AmqpFatalError`
 
 ## Development
 
-- `npm run build` - clean and compile TypeScript
-- `npm run build:watch` - compile in watch mode
-- `npm run clean` - remove `dist`
+- `npm run build` — clean and compile TypeScript
+- `npm run build:watch` — compile TypeScript in watch mode
+- `npm run clean` — remove build output
+- `npm test` — run unit tests
 
-## Publish flow
+## Publish
 
 - `npm run package`
-	- Runs `clean:advanced`
+	- Cleans workspace deeply
 	- Reinstalls dependencies
-	- Builds
-	- Publishes with `--access public`
+	- Builds library
+	- Publishes with public access
