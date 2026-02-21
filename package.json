@@ -1,6 +1,6 @@
 {
   "name": "@ido_kawaz/amqp-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AMQP client library for Kawaz Plus services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,10 +25,10 @@
   "license": "MIT",
   "dependencies": {
     "amqplib": "^0.10.9",
+    "@types/amqplib": "^0.10.8",
     "ramda": "^0.32.0"
   },
   "devDependencies": {
-    "@types/amqplib": "^0.10.8",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "@types/ramda": "^0.31.1",
