@@ -1,6 +1,6 @@
 # @ido_kawaz/amqp-client
 
-[![CI](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml)
+[![CI](https://github.com/kawaz-video-streaming/amqp-client/.github/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kawaz-video-streaming/amqp-client/.github/workflows/ci.yml)
 
 TypeScript Amqp client for RabbitMQ publishers and consumers.
 
