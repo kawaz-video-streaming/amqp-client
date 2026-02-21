@@ -102,7 +102,7 @@ bootstrap().catch(console.error);
 
 ## Publish
 
-- `npm run package`
+- `npm run publish`
 	- Cleans workspace deeply
 	- Reinstalls dependencies
 	- Builds library
