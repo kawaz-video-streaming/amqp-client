@@ -16,9 +16,7 @@ npm install @ido_kawaz/amqp-client
 import { AmqpClient, Consumer, AmqpConfig } from '@ido_kawaz/amqp-client';
 
 const config: AmqpConfig = {
-	amqpConnectionString: 'localhost',
-	amqpUser: 'guest',
-	amqpPassword: 'guest',
+	amqpConnectionString: 'amqp://guest:guest@localhost:5672',
 };
 
 async function bootstrap() {
@@ -57,8 +55,7 @@ bootstrap().catch(console.error);
 `AmqpConfig`
 
 - `amqpConnectionString`: RabbitMQ hostname
-- `amqpUser`: RabbitMQ username
-- `amqpPassword`: RabbitMQ password
+- Full RabbitMQ connection URL (for example `amqp://guest:guest@localhost:5672`)
 
 ## API
 

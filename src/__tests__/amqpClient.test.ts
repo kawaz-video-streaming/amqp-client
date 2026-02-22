@@ -11,9 +11,7 @@ jest.mock('amqplib', () => ({
 
 describe('AmqpClient', () => {
     const baseConfig = {
-        amqpConnectionString: 'localhost',
-        amqpUser: 'guest',
-        amqpPassword: 'guest',
+        amqpConnectionString: 'amqp://guest:guest@localhost:5672',
     };
 
     it('starts client and starts registered consumers', async () => {
@@ -34,11 +32,7 @@ describe('AmqpClient', () => {
         const client = new AmqpClient(baseConfig, [consumer]);
         await client.start();
 
-        expect(amqp.connect).toHaveBeenCalledWith({
-            username: 'guest',
-            password: 'guest',
-            hostname: 'localhost',
-        });
+        expect(amqp.connect).toHaveBeenCalledWith('amqp://guest:guest@localhost:5672');
         expect(connection.createChannel).toHaveBeenCalledTimes(1);
         expect(consumerStart).toHaveBeenCalledWith(channel);
     });

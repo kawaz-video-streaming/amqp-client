@@ -12,11 +12,7 @@ export class AmqpClient {
 
     async start(): Promise<void> {
         try {
-            const connection = await amqp.connect({
-                username: this.config.amqpUser,
-                password: this.config.amqpPassword,
-                hostname: this.config.amqpConnectionString,
-            });
+            const connection = await amqp.connect(this.config.amqpConnectionString);
             this.connection = connection;
             this.channel = await connection.createChannel().then(async (channel) => {
                 await Promise.all(this.consumers.map((consumer) => consumer.start(channel)));
