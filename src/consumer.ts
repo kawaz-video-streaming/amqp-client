@@ -1,22 +1,27 @@
 import amqp, { Channel } from 'amqplib';
 import { AmqpRetriableError } from './errors';
+import { ConsumerBinding } from './types';
 
-export class Consumer {
+export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
     constructor(
-        private readonly queue: string,
-        private readonly exchange: string,
-        private readonly topic: string,
-        private readonly handler: (message: amqp.Message | null) => Promise<void>,
+        private readonly binding: Binding,
+        private readonly validatePayload: (payload: object) => payload is Payload,
+        private readonly handlePayload: (payload: Payload) => Promise<void>,
     ) { }
 
     async start(channel: Channel): Promise<void> {
-        await this.createAndBindQueue(channel, this.queue, this.exchange, this.topic);
-        await channel.consume(this.queue, async (message) => {
+        await this.establishConsumerBinding(channel);
+        await channel.consume(this.binding.queue, async (message) => {
             if (!message) {
                 return;
             }
+            const payload: object = JSON.parse(message.content.toString());
+            if (!this.validatePayload(payload)) {
+                channel.nack(message, false, false);
+                return;
+            }
             try {
-                await this.handler(message);
+                await this.handlePayload(payload);
                 channel.ack(message);
             } catch (error) {
                 if (error instanceof AmqpRetriableError) {
@@ -44,10 +49,10 @@ export class Consumer {
         }
         return 0;
     }
-    private async createAndBindQueue(channel: Channel, queue: string, exchange: string, topic: string): Promise<void> {
-        await this.assertQueue(channel, queue);
-        await this.assertExchange(channel, exchange);
-        await this.bindQueue(channel, queue, exchange, topic);
+    private async establishConsumerBinding(channel: Channel): Promise<void> {
+        await this.assertQueue(channel, this.binding.queue);
+        await this.assertExchange(channel, this.binding.exchange);
+        await this.bindQueue(channel, this.binding.queue, this.binding.exchange, this.binding.topic);
     }
 
     private async assertQueue(channel: Channel, queue: string): Promise<void> {

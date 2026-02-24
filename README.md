@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kawaz-video-streaming/amqp-client/actions/workflows/ci.yml)
 
-TypeScript Amqp client for RabbitMQ publishers and consumers.
+TypeScript AMQP client for RabbitMQ publishers and consumers.
 
 ## Installation
 
@@ -10,28 +10,48 @@ TypeScript Amqp client for RabbitMQ publishers and consumers.
 npm install @ido_kawaz/amqp-client
 ```
 
-## Quick start
+## Quick Start
 
 ```ts
-import { AmqpClient, Consumer, AmqpConfig } from '@ido_kawaz/amqp-client';
+import {
+	AmqpClient,
+	Consumer,
+	createConsumerBinding,
+	type AmqpConfig,
+	AmqpRetriableError,
+} from '@ido_kawaz/amqp-client';
+
+type OrderCreatedPayload = {
+	orderId: string;
+	total: number;
+};
+
+const binding = createConsumerBinding(
+	'orders.created.queue',
+	'orders.exchange',
+	'orders.created',
+);
+
+const isOrderCreatedPayload = (payload: object): payload is OrderCreatedPayload => {
+	const candidate = payload as Partial<OrderCreatedPayload>;
+	return typeof candidate.orderId === 'string' && typeof candidate.total === 'number';
+};
 
 const config: AmqpConfig = {
 	amqpConnectionString: 'amqp://guest:guest@localhost:5672',
 };
 
 async function bootstrap() {
-	const consumer = new Consumer(
-		'orders.queue',
-		'orders.exchange',
-		'orders.created',
-		async (message) => {
-			if (!message) {
-				return;
+	const consumer = new Consumer<OrderCreatedPayload, typeof binding>(
+		binding,
+		isOrderCreatedPayload,
+		async (payload) => {
+			if (payload.total <= 0) {
+				throw new AmqpRetriableError(new Error('Amount not ready yet'), 5);
 			}
 
-			const payload = JSON.parse(message.content.toString());
-			console.log('received:', payload);
-		},
+			console.log('received order:', payload.orderId);
+		}
 	);
 
 	const client = new AmqpClient(config, [consumer]);
@@ -54,8 +74,7 @@ bootstrap().catch(console.error);
 
 `AmqpConfig`
 
-- `amqpConnectionString`: RabbitMQ hostname
-- Full RabbitMQ connection URL (for example `amqp://guest:guest@localhost:5672`)
+- `amqpConnectionString`: Full RabbitMQ connection URL (for example `amqp://guest:guest@localhost:5672`)
 
 ## API
 
@@ -65,20 +84,27 @@ bootstrap().catch(console.error);
 - `start(): Promise<void>`
 	- Connects to RabbitMQ and starts all consumer registrations.
 - `publish<T>(exchange: string, topic: string, message: T): void`
-	- JSON serializes payload and publishes it.
+	- Serializes payload to JSON and publishes it.
 	- Throws `AmqpUninitializedError` if `start()` has not been called.
-	- Throws `AmqpPublisherError` if publish returns false.
+	- Throws `AmqpPublisherError` if publish returns `false`.
 - `stop(): Promise<void>`
-	- Closes channel and connection.
+	- Closes channel and connection (if initialized).
 
 ### `Consumer`
 
-- `new Consumer(queue, exchange, topic, handler)`
-	- Asserts queue and exchange and binds queue to topic.
-	- Calls handler for each message.
+- `new Consumer(binding, validatePayload, handlePayload)`
+	- `binding: ConsumerBinding` contains `queue`, `exchange`, `topic`.
+	- `validatePayload(payload): payload is Payload` validates parsed JSON before handling.
+	- `handlePayload(payload)` runs only for valid payloads.
 	- `ack`s on success.
-	- `nack`s with requeue logic for `AmqpRetriableError`.
+	- `nack`s invalid payloads without requeue.
+	- `nack`s with requeue for `AmqpRetriableError` while `x-delivery-count < retryLimit`.
 	- `nack`s without requeue for all other errors.
+
+### `createConsumerBinding`
+
+- `createConsumerBinding(queue, exchange, topic): ConsumerBinding`
+- Helper for creating typed queue/exchange/topic bindings.
 
 ## Errors
 
@@ -97,9 +123,10 @@ bootstrap().catch(console.error);
 - `npm run clean` — remove build output
 - `npm test` — run unit tests
 
-## Publish
+## Publishing
 
-- `npm run publish`
+
+- `npm run package`
 	- Cleans workspace deeply
 	- Reinstalls dependencies
 	- Builds library

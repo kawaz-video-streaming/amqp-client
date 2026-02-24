@@ -7,3 +7,9 @@ export interface AmqpPublishArgs<T> {
     topic: string;
     message: T;
 }
+
+export interface ConsumerBinding {
+    queue: string;
+    exchange: string;
+    topic: string;
+}

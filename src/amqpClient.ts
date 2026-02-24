@@ -7,7 +7,7 @@ import { Consumer } from './consumer';
 export class AmqpClient {
     connection: ChannelModel | undefined;
     channel: Channel | undefined;
-    constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer[]) {
+    constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer<any, any>[]) {
     }
 
     async start(): Promise<void> {
