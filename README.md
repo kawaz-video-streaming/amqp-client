@@ -42,7 +42,7 @@ const config: AmqpConfig = {
 };
 
 async function bootstrap() {
-	const consumer = new Consumer<OrderCreatedPayload, typeof binding>(
+	const consumer = new Consumer<OrderCreatedPayload>(
 		binding,
 		isOrderCreatedPayload,
 		async (payload) => {
@@ -92,7 +92,8 @@ bootstrap().catch(console.error);
 
 ### `Consumer`
 
-- `new Consumer(binding, validatePayload, handlePayload)`
+- `new Consumer<Payload>(binding, validatePayload, handlePayload)`
+	- Generic `Payload` type is required; binding type is inferred from the binding parameter.
 	- `binding: ConsumerBinding` contains `queue`, `exchange`, `topic`.
 	- `validatePayload(payload): payload is Payload` validates parsed JSON before handling.
 	- `handlePayload(payload)` runs only for valid payloads.
