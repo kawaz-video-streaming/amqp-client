@@ -12,8 +12,8 @@ const amqpEnvSchema = Joi.object<AmqpEnv>({
     AMQP_CONNECTION_STRING: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
 }).unknown();
 
-export const createAmqpConfig = (env: NodeJS.ProcessEnv): AmqpConfig => {
-    const { error, value } = amqpEnvSchema.validate(env, { abortEarly: false });
+export const createAmqpConfig = (): AmqpConfig => {
+    const { error, value } = amqpEnvSchema.validate(process.env, { abortEarly: false });
     if (error) {
         throw error;
     }
