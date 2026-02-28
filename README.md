@@ -17,7 +17,8 @@ import {
 	AmqpClient,
 	Consumer,
 	createConsumerBinding,
-	type AmqpConfig,
+	type AmqpConfig
+	createAmqpConfig,
 	AmqpRetriableError,
 } from '@ido_kawaz/amqp-client';
 
@@ -75,6 +76,12 @@ bootstrap().catch(console.error);
 `AmqpConfig`
 
 - `amqpConnectionString`: Full RabbitMQ connection URL (for example `amqp://guest:guest@localhost:5672`)
+
+`createAmqpConfig(env: NodeJS.ProcessEnv): AmqpConfig`
+
+- Validates `AMQP_CONNECTION_STRING` from env using Joi
+- Requires URI scheme `amqp` or `amqps`
+- Throws Joi validation error for invalid or missing env value
 
 ## API
 

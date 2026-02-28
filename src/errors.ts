@@ -1,4 +1,5 @@
-import { AmqpConnectionArgs, AmqpPublishArgs } from "./types";
+import { AmqpConfig } from "./config";
+import { AmqpPublishArgs } from "./types";
 
 export class AmqpError extends Error {
     constructor(message: string, args?: Object) {
@@ -13,13 +14,14 @@ export class AmqpUninitializedError extends AmqpError {
 }
 
 export class AmqpConnectionError extends AmqpError {
-    constructor(errorMessage: string, args: AmqpConnectionArgs) {
+    constructor(errorMessage: string, args: AmqpConfig) {
         super(`Failed to connect to AMQP server: ${errorMessage}`, args);
     }
 }
 
+
 export class AmqpPublisherError<T> extends AmqpError {
-    constructor(args: AmqpPublishArgs<T>) {
+    constructor(...args: AmqpPublishArgs<T>) {
         super("Failed to publish message", args);
     }
 }

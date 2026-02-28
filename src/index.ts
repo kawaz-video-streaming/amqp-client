@@ -1,5 +1,5 @@
 export { AmqpClient } from './amqpClient';
-export { AmqpConfig } from './config';
+export { AmqpConfig, createAmqpConfig } from './config';
 export { Consumer } from './consumer';
 export { createConsumerBinding } from './binding';
 export {

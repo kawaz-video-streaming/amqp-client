@@ -3,6 +3,7 @@ import { AmqpConfig } from './config';
 import { AmqpConnectionError, AmqpPublisherError, AmqpUninitializedError } from './errors';
 import { isNil, isNotNil } from 'ramda';
 import { Consumer } from './consumer';
+import { AmqpPublishArgs } from './types';
 
 export class AmqpClient {
     connection: ChannelModel | undefined;
@@ -23,14 +24,15 @@ export class AmqpClient {
         }
     }
 
-    publish<T>(exchange: string, topic: string, message: T): void {
+    publish<T>(...args: AmqpPublishArgs<T>): void {
         if (isNil(this.channel)) {
             throw new AmqpUninitializedError();
         }
+        const [exchange, topic, message] = args;
         const messageData = Buffer.from(JSON.stringify(message));
         const isPublished = this.channel.publish(exchange, topic, messageData);
         if (!isPublished) {
-            throw new AmqpPublisherError({ exchange, topic, message });
+            throw new AmqpPublisherError(exchange, topic, message);
         }
     }
 

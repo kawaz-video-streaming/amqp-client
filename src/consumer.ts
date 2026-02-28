@@ -1,6 +1,11 @@
 import amqp, { Channel } from 'amqplib';
 import { AmqpRetriableError } from './errors';
-import { ConsumerBinding } from './types';
+
+interface ConsumerBinding {
+    queue: string;
+    exchange: string;
+    topic: string;
+}
 
 export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
     constructor(
