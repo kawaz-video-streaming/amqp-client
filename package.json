@@ -1,6 +1,6 @@
 {
   "name": "@ido_kawaz/amqp-client",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "AMQP client library for Kawaz Plus services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

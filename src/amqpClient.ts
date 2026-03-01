@@ -13,12 +13,15 @@ export class AmqpClient {
 
     async start(): Promise<void> {
         try {
+            const startTime = Date.now();
             const connection = await amqp.connect(this.config.amqpConnectionString);
             this.connection = connection;
             this.channel = await connection.createChannel().then(async (channel) => {
                 await Promise.all(this.consumers.map((consumer) => consumer.start(channel)));
                 return channel;
             });
+            const endTime = Date.now();
+            console.log(`amqp client started successfully in ${endTime - startTime} ms`);
         } catch (error) {
             throw new AmqpConnectionError((error as Error).message, { amqpConnectionString: this.config.amqpConnectionString });
         }
