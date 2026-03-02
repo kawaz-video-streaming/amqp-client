@@ -1,5 +1,15 @@
-import Joi from 'joi';
+import { ZodError } from 'zod';
 import { createAmqpConfig } from '../config';
+
+const getZodError = () => {
+    try {
+        createAmqpConfig();
+        throw new Error('Expected action to throw ZodError');
+    } catch (error) {
+        expect(error).toBeInstanceOf(ZodError);
+        return error as ZodError;
+    }
+};
 
 describe('createAmqpConfig', () => {
     const originalEnv = process.env;
@@ -35,12 +45,22 @@ describe('createAmqpConfig', () => {
     it('throws validation error when AMQP_CONNECTION_STRING is missing', () => {
         delete process.env.AMQP_CONNECTION_STRING;
 
-        expect(() => createAmqpConfig()).toThrow(Joi.ValidationError);
+        const error = getZodError();
+
+        expect(error.issues).toHaveLength(1);
+        expect(error.issues[0]).toEqual(
+            expect.objectContaining({ path: ['AMQP_CONNECTION_STRING'], code: 'invalid_type', expected: 'string', message: 'Invalid input: expected string, received undefined' })
+        );
     });
 
     it('throws validation error when scheme is invalid', () => {
         process.env.AMQP_CONNECTION_STRING = 'http://localhost:5672';
 
-        expect(() => createAmqpConfig()).toThrow(Joi.ValidationError);
+        const error = getZodError();
+
+        expect(error.issues).toHaveLength(1);
+        expect(error.issues[0]).toEqual(
+            expect.objectContaining({ path: ['AMQP_CONNECTION_STRING'], code: 'invalid_format', format: 'url', note: "Invalid protocol", message: 'Invalid URL' })
+        );
     });
 });

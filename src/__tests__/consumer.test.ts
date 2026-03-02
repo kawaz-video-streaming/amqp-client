@@ -33,7 +33,7 @@ describe('Consumer', () => {
         validatePayload: (payload: object) => payload is TestPayload,
         handlePayload: (payload: TestPayload) => Promise<void>,
     ) {
-        return new Consumer(binding, validatePayload, handlePayload);
+        return new Consumer('test-consumer', binding, validatePayload, handlePayload);
     }
 
     function createValidationHarness(
@@ -56,7 +56,7 @@ describe('Consumer', () => {
         const channel = createChannel();
         channel.consume.mockResolvedValue({ consumerTag: 'tag' });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(channel.assertQueue).toHaveBeenCalledWith('orders.queue', {
             durable: true,
@@ -80,7 +80,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(validatePayloadMock).not.toHaveBeenCalled();
         expect(handlePayload).not.toHaveBeenCalled();
@@ -100,7 +100,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(validatePayloadMock).toHaveBeenCalledWith({ invalid: true });
         expect(handlePayload).not.toHaveBeenCalled();
@@ -122,7 +122,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(handlePayload).toHaveBeenCalledWith({ id: '123' });
         expect(channel.ack).toHaveBeenCalledWith(message);
@@ -143,7 +143,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(channel.nack).toHaveBeenCalledWith(message, false, true);
     });
@@ -162,7 +162,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(channel.nack).toHaveBeenCalledWith(message, false, false);
     });
@@ -181,7 +181,7 @@ describe('Consumer', () => {
             return { consumerTag: 'tag' };
         });
 
-        await consumer.start(channel as any);
+        await consumer.start(channel as any, 'test-service');
 
         expect(channel.nack).toHaveBeenCalledWith(message, false, false);
     });

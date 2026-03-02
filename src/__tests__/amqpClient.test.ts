@@ -43,19 +43,19 @@ describe('AmqpClient', () => {
         (amqp.connect as unknown as jest.Mock).mockResolvedValue(connection);
 
         const client = new AmqpClient(baseConfig, [firstConsumer, secondConsumer]);
-        await client.start();
+        await client.start('test-service');
 
         expect(amqp.connect).toHaveBeenCalledWith('amqp://guest:guest@localhost:5672');
         expect(connection.createChannel).toHaveBeenCalledTimes(1);
-        expect(firstConsumerStart).toHaveBeenCalledWith(channel);
-        expect(secondConsumerStart).toHaveBeenCalledWith(channel);
+        expect(firstConsumerStart).toHaveBeenCalledWith(channel, 'test-service');
+        expect(secondConsumerStart).toHaveBeenCalledWith(channel, 'test-service');
     });
 
     it('throws AmqpConnectionError when connect fails', async () => {
         (amqp.connect as unknown as jest.Mock).mockRejectedValue(new Error('boom'));
         const client = new AmqpClient(baseConfig, []);
 
-        await expect(client.start()).rejects.toBeInstanceOf(AmqpConnectionError);
+        await expect(client.start('test-service')).rejects.toBeInstanceOf(AmqpConnectionError);
     });
 
     it('throws AmqpUninitializedError when publishing before start', () => {
@@ -70,7 +70,7 @@ describe('AmqpClient', () => {
         (amqp.connect as unknown as jest.Mock).mockResolvedValue(connection);
 
         const client = new AmqpClient(baseConfig, []);
-        await client.start();
+        await client.start('test-service');
 
         const payload = { orderId: '1', total: 42 };
         client.publish('orders.exchange', 'orders.created', payload);
@@ -88,7 +88,7 @@ describe('AmqpClient', () => {
         (amqp.connect as unknown as jest.Mock).mockResolvedValue(connection);
 
         const client = new AmqpClient(baseConfig, []);
-        await client.start();
+        await client.start('test-service');
 
         expect(() => client.publish('ex', 'rk', { ok: true })).toThrow(AmqpPublisherError);
     });
@@ -99,7 +99,7 @@ describe('AmqpClient', () => {
         (amqp.connect as unknown as jest.Mock).mockResolvedValue(connection);
 
         const client = new AmqpClient(baseConfig, []);
-        await client.start();
+        await client.start('test-service');
         await client.stop();
 
         expect(channel.close).toHaveBeenCalledTimes(1);

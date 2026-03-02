@@ -11,13 +11,13 @@ export class AmqpClient {
     constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer<any, any>[]) {
     }
 
-    async start(): Promise<void> {
+    async start(serviceName: string): Promise<void> {
         try {
             const startTime = Date.now();
             const connection = await amqp.connect(this.config.amqpConnectionString);
             this.connection = connection;
             this.channel = await connection.createChannel().then(async (channel) => {
-                await Promise.all(this.consumers.map((consumer) => consumer.start(channel)));
+                await Promise.all(this.consumers.map((consumer) => consumer.start(channel, serviceName)));
                 return channel;
             });
             const endTime = Date.now();

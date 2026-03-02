@@ -1,23 +1,16 @@
-import Joi from "joi";
+import { z } from 'zod';
 
 export interface AmqpConfig {
     amqpConnectionString: string;
 }
 
-interface AmqpEnv {
-    AMQP_CONNECTION_STRING: string;
-}
 
-const amqpEnvSchema = Joi.object<AmqpEnv>({
-    AMQP_CONNECTION_STRING: Joi.string().uri({ scheme: ['amqp', 'amqps'] }).required(),
-}).unknown();
+const amqpEnvSchema = z.object({
+    AMQP_CONNECTION_STRING: z.url({ protocol: /^amqp(s)?$/ }),
+});
 
 export const createAmqpConfig = (): AmqpConfig => {
-    const { error, value } = amqpEnvSchema.validate(process.env, { abortEarly: false });
-    if (error) {
-        throw error;
-    }
-    const amqpEnv = value as AmqpEnv;
+    const amqpEnv = amqpEnvSchema.parse(process.env);
     return {
         amqpConnectionString: amqpEnv.AMQP_CONNECTION_STRING
     };
