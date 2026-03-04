@@ -1,1 +1,1 @@
-export type AmqpPublishArgs<T> = [exchange: string, topic: string, message: T];
+export type AmqpPublishArgs<T extends object> = [exchange: string, topic: string, message: T];

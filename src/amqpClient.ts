@@ -27,7 +27,7 @@ export class AmqpClient {
         }
     }
 
-    publish<T>(...args: AmqpPublishArgs<T>): void {
+    publish<T extends object>(...args: AmqpPublishArgs<T>): void {
         if (isNil(this.channel)) {
             throw new AmqpUninitializedError();
         }

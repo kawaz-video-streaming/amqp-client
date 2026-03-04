@@ -1,6 +1,6 @@
 {
   "name": "@ido_kawaz/amqp-client",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "AMQP client library for Kawaz Plus services",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,8 +13,8 @@
     "build": "npm run clean && tsc",
     "build:watch": "tsc --watch",
     "build:advanced": "npm run clean:advanced && npm i && tsc",
-    "test": "npm run build && jest --runInBand",
-    "test:advanced": "npm run build:advanced && jest --runInBand",
+    "test": "npm run build && jest --runInBand --verbose",
+    "test:advanced": "npm run build:advanced && jest --runInBand --verbose",
     "package": "npm run test:advanced && npm publish --access public"
   },
   "keywords": [
