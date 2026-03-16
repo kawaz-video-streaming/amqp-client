@@ -8,7 +8,11 @@ import { AmqpPublishArgs } from './types';
 export class AmqpClient {
     connection: ChannelModel | undefined;
     channel: Channel | undefined;
-    constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer<any, any>[]) {
+    constructor(private readonly config: AmqpConfig, private readonly consumers: Consumer<any, any>[] = []) {
+    }
+
+    registerConsumers(consumers: Consumer<any, any>[]): void {
+        this.consumers.push(...consumers);
     }
 
     async start(serviceName: string): Promise<void> {
