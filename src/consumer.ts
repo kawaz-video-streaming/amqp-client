@@ -14,7 +14,7 @@ interface ConsumerEvents<Payload extends object, Output = void> {
     handleMessage: (payload: Payload) => Promise<Output>;
     handleRetriableError: (error: AmqpRetriableError<Payload>, payload: Payload) => Promise<void>;
     handleFatalError: (error: AmqpFatalError, payload: any) => Promise<void>;
-    handleSuccess: (payload: Payload, response?: Output) => Promise<void>;
+    handleSuccess: (payload: Payload, response: Output) => Promise<void>;
 }
 
 export class Consumer<Payload extends object, Binding extends ConsumerBinding, Output = void> {
