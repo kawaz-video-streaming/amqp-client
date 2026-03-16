@@ -164,7 +164,29 @@ describe('Consumer', () => {
 
         await consumer.start(channel as any, 'test-service');
 
-        expect(handleSuccess).toHaveBeenCalledWith({ id: '42' });
+        expect(handleSuccess).toHaveBeenCalledWith({ id: '42' }, undefined);
+        expect(channel.ack).toHaveBeenCalledWith(message);
+    });
+
+    it('passes handleMessage return value to handleSuccess', async () => {
+        const result = { orderId: 'abc' };
+        const handleMessage = jest.fn().mockResolvedValue(result);
+        const handleSuccess = jest.fn().mockResolvedValue(undefined);
+        const consumer = new Consumer<TestPayload, typeof binding, typeof result>('test-consumer', binding)
+            .on('validateMessage', isTestPayload)
+            .on('handleMessage', handleMessage)
+            .on('handleSuccess', handleSuccess);
+        const channel = createChannel();
+        const message = createMessage({ id: '99' });
+
+        channel.consume.mockImplementation(async (_queue: string, onMessage: (msg: any) => Promise<void>) => {
+            await onMessage(message);
+            return { consumerTag: 'tag' };
+        });
+
+        await consumer.start(channel as any, 'test-service');
+
+        expect(handleSuccess).toHaveBeenCalledWith({ id: '99' }, result);
         expect(channel.ack).toHaveBeenCalledWith(message);
     });
 

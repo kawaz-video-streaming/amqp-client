@@ -9,16 +9,16 @@ interface ConsumerBinding {
     topic: string;
 }
 
-interface ConsumerEvents<Payload extends object> {
+interface ConsumerEvents<Payload extends object, Output = void> {
     validateMessage: (payload: object) => payload is Payload;
-    handleMessage: (payload: Payload) => Promise<void>;
+    handleMessage: (payload: Payload) => Promise<Output>;
     handleRetriableError: (error: AmqpRetriableError<Payload>, payload: Payload) => Promise<void>;
     handleFatalError: (error: AmqpFatalError, payload: any) => Promise<void>;
-    handleSuccess: (payload: Payload) => Promise<void>;
+    handleSuccess: (payload: Payload, response?: Output) => Promise<void>;
 }
 
-export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
-    private handlers: Partial<ConsumerEvents<Payload>> = {};
+export class Consumer<Payload extends object, Binding extends ConsumerBinding, Output = void> {
+    private handlers: Partial<ConsumerEvents<Payload, Output>> = {};
 
     constructor(
         private readonly consumerName: string,
@@ -36,7 +36,7 @@ export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
         });
     }
 
-    on<E extends keyof ConsumerEvents<Payload>>(event: E, handler: ConsumerEvents<Payload>[E]): this {
+    on<E extends keyof ConsumerEvents<Payload, Output>>(event: E, handler: ConsumerEvents<Payload, Output>[E]): this {
         this.handlers[event] = handler;
         return this;
     }
@@ -48,16 +48,16 @@ export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
         return payload;
     }
 
-    private handlePayload(payload: Payload): Promise<void> {
+    private handlePayload(payload: Payload): Promise<Output> {
         if (isNil(this.handlers.handleMessage)) {
             throw new MissingPayloadHandlerError(payload);
         }
         return this.handlers.handleMessage(payload);
     }
 
-    private async handleSuccess(payload: Payload): Promise<void> {
+    private async handleSuccess(payload: Payload, response: Output): Promise<void> {
         if (isNotNil(this.handlers.handleSuccess)) {
-            await this.handlers.handleSuccess(payload);
+            await this.handlers.handleSuccess(payload, response);
         }
     }
 
@@ -120,8 +120,8 @@ export class Consumer<Payload extends object, Binding extends ConsumerBinding> {
         try {
             const payload = this.validateAndParse(rawPayload);
             logger.info(messageInfo, 'started handling message');
-            await this.handlePayload(payload);
-            await this.handleSuccess(payload);
+            const response = await this.handlePayload(payload);
+            await this.handleSuccess(payload, response);
             logger.info({ ...messageInfo, payload, durationMs: Date.now() - startTime }, 'finished handling message');
             channel.ack(message);
         } catch (error) {
