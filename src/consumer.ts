@@ -9,7 +9,7 @@ interface ConsumerBinding {
     topic: string;
 }
 
-interface ConsumerEvents<Payload extends object, Output = void> {
+interface ConsumerEvents<Payload extends object, Output = any> {
     validateMessage: (payload: object) => payload is Payload;
     handleMessage: (payload: Payload) => Promise<Output>;
     handleRetriableError: (error: AmqpRetriableError<Payload>, payload: Payload) => Promise<void>;
@@ -17,7 +17,7 @@ interface ConsumerEvents<Payload extends object, Output = void> {
     handleSuccess: (payload: Payload, response: Output) => Promise<void>;
 }
 
-export class Consumer<Payload extends object, Binding extends ConsumerBinding, Output = void> {
+export class Consumer<Payload extends object, Binding extends ConsumerBinding, Output = any> {
     private handlers: Partial<ConsumerEvents<Payload, Output>> = {};
 
     constructor(
