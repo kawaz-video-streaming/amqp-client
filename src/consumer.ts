@@ -12,8 +12,8 @@ interface ConsumerBinding {
 interface ConsumerEvents<Payload extends object, Output = any> {
     validateMessage: (payload: object) => payload is Payload;
     handleMessage: (payload: Payload) => Promise<Output>;
-    handleRetriableError: (error: AmqpRetriableError<Payload>, payload: Payload) => Promise<void>;
-    handleFatalError: (error: AmqpFatalError, payload: any) => Promise<void>;
+    handleRetriableError: <T extends AmqpRetriableError<Payload>>(error: T, payload: Payload) => Promise<void>;
+    handleFatalError: <T extends AmqpFatalError>(error: T, payload: any) => Promise<void>;
     handleSuccess: (payload: Payload, response: Output) => Promise<void>;
 }
 
