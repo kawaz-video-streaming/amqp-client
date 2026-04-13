@@ -54,4 +54,4 @@ This is a TypeScript RabbitMQ client library (`@ido_kawaz/amqp-client`) that wra
 
 ### Exports
 
-All public API is re-exported from [src/index.ts](src/index.ts): `AmqpClient`, `Consumer`, `createConsumerBinding`, `createAmqpConfig`, all error classes, and `AmqpPublishArgs` type.
+All public API is re-exported from [src/index.ts](src/index.ts): `AmqpClient`, `Consumer`, `createConsumerBinding`, `createAmqpConfig`, `AmqpConfig`, and error classes `AmqpError`, `AmqpConnectionError`, `AmqpPublisherError`, `AmqpConsumerError`, `AmqpRetriableError`, `AmqpFatalError`. Note: `AmqpUninitializedError`, `InvalidPayloadFormatError`, `MissingPayloadHandlerError`, and `AmqpPublishArgs` are internal and not exported.

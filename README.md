@@ -43,20 +43,19 @@ const config: AmqpConfig = {
 };
 
 async function bootstrap() {
-	const consumer = new Consumer<OrderCreatedPayload>(
-		binding,
-		isOrderCreatedPayload,
-		async (payload) => {
+	const consumer = new Consumer<OrderCreatedPayload, typeof binding>('orders-created-consumer', binding);
+	consumer
+		.on('validateMessage', isOrderCreatedPayload)
+		.on('handleMessage', async (payload) => {
 			if (payload.total <= 0) {
-				throw new AmqpRetriableError(new Error('Amount not ready yet'), 5);
+				throw new AmqpRetriableError(payload, 'Amount not ready yet', undefined, 5);
 			}
 
 			console.log('received order:', payload.orderId);
-		}
-	);
+		});
 
 	const client = new AmqpClient(config, [consumer]);
-	await client.start();
+	await client.start('my-service');
 
 	client.publish('orders.exchange', 'orders.created', {
 		orderId: '123',
@@ -79,17 +78,19 @@ bootstrap().catch(console.error);
 
 `createAmqpConfig(): AmqpConfig`
 
-- Validates `AMQP_CONNECTION_STRING` from `process.env` using Joi
+- Validates `AMQP_CONNECTION_STRING` from `process.env` using Zod
 - Requires URI scheme `amqp` or `amqps`
-- Throws Joi validation error for invalid or missing env value
+- Throws Zod validation error for invalid or missing env value
 
 ## API
 
 ### `AmqpClient`
 
-- `new AmqpClient(config: AmqpConfig, consumers: Consumer[])`
-- `start(): Promise<void>`
+- `new AmqpClient(config: AmqpConfig, consumers?: Consumer[])`
+- `start(serviceName: string): Promise<void>`
 	- Connects to RabbitMQ and starts all consumer registrations.
+- `registerConsumers(consumers: Consumer[]): void`
+	- Adds consumers after construction.
 - `publish<T>(exchange: string, topic: string, message: T): void`
 	- Serializes payload to JSON and publishes it.
 	- Throws `AmqpUninitializedError` if `start()` has not been called.
@@ -99,11 +100,14 @@ bootstrap().catch(console.error);
 
 ### `Consumer`
 
-- `new Consumer<Payload>(binding, validatePayload, handlePayload)`
-	- Generic `Payload` type is required; binding type is inferred from the binding parameter.
-	- `binding: ConsumerBinding` contains `queue`, `exchange`, `topic`.
-	- `validatePayload(payload): payload is Payload` validates parsed JSON before handling.
-	- `handlePayload(payload)` runs only for valid payloads.
+- `new Consumer<Payload, Binding>(consumerName: string, binding: Binding)`
+	- Generic `Payload` type must be provided; `Binding` is inferred from the binding parameter.
+	- Wire handlers with `.on(event, handler)` (chainable):
+		- `validateMessage`: type guard `(payload: object) => payload is Payload`
+		- `handleMessage`: `(payload: Payload) => Promise<Output>`
+		- `handleSuccess`: `(payload: Payload, response: Output) => Promise<void>`
+		- `handleRetriableError`: `(error: AmqpRetriableError, payload: Payload) => Promise<void>`
+		- `handleFatalError`: `(error: AmqpFatalError, payload: any) => Promise<void>`
 	- `ack`s on success.
 	- `nack`s invalid payloads without requeue.
 	- `nack`s with requeue for `AmqpRetriableError` while `x-delivery-count < retryLimit`.
@@ -116,13 +120,14 @@ bootstrap().catch(console.error);
 
 ## Errors
 
-- `AmqpError`
+Exported error classes:
+
+- `AmqpError` (base)
 - `AmqpConnectionError`
-- `AmqpUninitializedError`
 - `AmqpPublisherError`
 - `AmqpConsumerError`
-- `AmqpRetriableError`
-- `AmqpFatalError`
+- `AmqpRetriableError` — has `retryLimit: number`; triggers requeue up to that limit
+- `AmqpFatalError` — triggers nack without requeue
 
 ## Development
 
